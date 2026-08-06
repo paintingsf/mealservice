@@ -1,0 +1,6 @@
+{
+  "name": "양정고 급식 정보",
+  "description": "양정고등학교 날짜별 급식 식단 및 영양 정보를 부드러운 스크롤 인터랙션으로 확인하는 반응형 웹 애플리케이션",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
