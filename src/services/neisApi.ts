@@ -38,15 +38,27 @@ export function formatYMDToKoreanDate(ymd: string): string {
 export function parseDishes(rawDdish: string): DishItem[] {
   if (!rawDdish) return [];
 
-  // Replace <br/>, <br>, \n with a delimiter
-  const lines = rawDdish
+  // Decode common HTML entities
+  const decoded = rawDdish
+    .replace(/&amp;/g, '&')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
+
+  // Replace <br/>, <br>, \r\n, \n with a unified newline delimiter
+  const lines = decoded
     .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
     .split('\n')
     .map((line) => line.trim())
     .filter((line) => line.length > 0);
 
   return lines.map((line, idx) => {
     // Extract allergy code numbers inside parentheses, e.g. (1.2.5.6) or (13) or (5.6.10.13)
+    // Matches only parentheses containing digits, dots, and spaces
     const allergyMatch = line.match(/\(([\d\.\s]+)\)/);
     let allergyCodes: number[] = [];
 
@@ -57,9 +69,9 @@ export function parseDishes(rawDdish: string): DishItem[] {
         .filter((n) => !isNaN(n) && n >= 1 && n <= 19);
     }
 
-    // Clean dish name: remove (1.2.5) and keep or clean redundant brackets if appropriate
+    // Clean dish name: remove only the allergy parentheses like (1.2.5.6)
     let cleanName = line.replace(/\(([\d\.\s]+)\)/g, '').trim();
-    // Clean trailing empty spaces or symbols
+    // Clean redundant spaces or symbols
     cleanName = cleanName.replace(/\s+/g, ' ');
 
     return {
@@ -193,7 +205,7 @@ export async function fetchMealsByDate(ymd: string): Promise<ParsedMeal[]> {
     return mealCache.get(ymd)!;
   }
 
-  const url = `${NEIS_BASE_URL}?ATPT_OFCDC_SC_CODE=${YANGJEONG_OFFICE_CODE}&SD_SCHUL_CODE=${YANGJEONG_SCHOOL_CODE}&MLSV_YMD=${ymd}&type=json`;
+  const url = `${NEIS_BASE_URL}?ATPT_OFCDC_SC_CODE=${YANGJEONG_OFFICE_CODE}&SD_SCHUL_CODE=${YANGJEONG_SCHOOL_CODE}&MLSV_YMD=${ymd}&pSize=100&type=json`;
 
   try {
     const response = await fetch(url);
@@ -231,7 +243,7 @@ export async function fetchMealsByDate(ymd: string): Promise<ParsedMeal[]> {
  * Fetch meals for a date range (YYYYMMDD to YYYYMMDD)
  */
 export async function fetchMealsByDateRange(fromYmd: string, toYmd: string): Promise<Map<string, ParsedMeal[]>> {
-  const url = `${NEIS_BASE_URL}?ATPT_OFCDC_SC_CODE=${YANGJEONG_OFFICE_CODE}&SD_SCHUL_CODE=${YANGJEONG_SCHOOL_CODE}&MLSV_FROM_YMD=${fromYmd}&MLSV_TO_YMD=${toYmd}&type=json`;
+  const url = `${NEIS_BASE_URL}?ATPT_OFCDC_SC_CODE=${YANGJEONG_OFFICE_CODE}&SD_SCHUL_CODE=${YANGJEONG_SCHOOL_CODE}&MLSV_FROM_YMD=${fromYmd}&MLSV_TO_YMD=${toYmd}&pSize=100&type=json`;
 
   const resultMap = new Map<string, ParsedMeal[]>();
 
@@ -248,7 +260,11 @@ export async function fetchMealsByDateRange(fromYmd: string, toYmd: string): Pro
       for (const row of rows) {
         const meal = convertRowToParsedMeal(row);
         const list = resultMap.get(meal.dateString) || [];
-        list.push(meal);
+        // Prevent duplicate meal codes if API returned repeated rows
+        if (!list.some((existing) => existing.mealCode === meal.mealCode)) {
+          list.push(meal);
+        }
+        list.sort((a, b) => Number(a.mealCode) - Number(b.mealCode));
         resultMap.set(meal.dateString, list);
         // Also save to global cache
         mealCache.set(meal.dateString, list);

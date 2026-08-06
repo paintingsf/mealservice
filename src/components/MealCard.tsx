@@ -104,26 +104,47 @@ export const MealCard: React.FC<MealCardProps> = ({
           <div className="flex items-center justify-between flex-wrap gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
             {/* Meal type tabs if multiple (조식 / 중식 / 석식) */}
             {meals.length > 1 ? (
-              <div className="flex items-center p-1 rounded-2xl bg-slate-100 dark:bg-slate-800">
-                {meals.map((m, idx) => (
-                  <button
-                    key={m.mealCode}
-                    type="button"
-                    onClick={() => onSelectMealIndex(idx)}
-                    className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all ${
-                      idx === activeMealIndex
-                        ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-xs'
-                        : 'text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
-                    }`}
-                  >
-                    {m.mealName}
-                  </button>
-                ))}
+              <div className="flex items-center p-1 rounded-2xl bg-slate-100 dark:bg-slate-800 gap-1">
+                {meals.map((m, idx) => {
+                  const isCurrent = idx === activeMealIndex;
+                  return (
+                    <button
+                      key={m.mealCode}
+                      type="button"
+                      onClick={() => onSelectMealIndex(idx)}
+                      className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all ${
+                        isCurrent
+                          ? m.mealCode === '3'
+                            ? 'bg-indigo-600 text-white shadow-xs'
+                            : m.mealCode === '1'
+                            ? 'bg-amber-600 text-white shadow-xs'
+                            : 'bg-blue-600 text-white shadow-xs'
+                          : 'text-slate-500 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-700/50'
+                      }`}
+                    >
+                      {m.mealCode === '2' && <span>☀️</span>}
+                      {m.mealCode === '3' && <span>🌙</span>}
+                      {m.mealCode === '1' && <span>🌅</span>}
+                      <span>{m.mealName}</span>
+                    </button>
+                  );
+                })}
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                <span className="px-3.5 py-1.5 rounded-xl text-xs font-extrabold bg-blue-50 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800">
-                  {meal.mealName}
+                <span
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5 ${
+                    meal.mealCode === '3'
+                      ? 'bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800'
+                      : meal.mealCode === '1'
+                      ? 'bg-amber-50 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800'
+                      : 'bg-blue-50 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800'
+                  }`}
+                >
+                  {meal.mealCode === '2' && <span>☀️</span>}
+                  {meal.mealCode === '3' && <span>🌙</span>}
+                  {meal.mealCode === '1' && <span>🌅</span>}
+                  <span>{meal.mealName}</span>
                 </span>
                 <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
                   {meal.formattedDate}

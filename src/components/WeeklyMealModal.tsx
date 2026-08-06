@@ -8,7 +8,7 @@ interface WeeklyMealModalProps {
   isOpen: boolean;
   onClose: () => void;
   baseDate: DateSelection;
-  onSelectDate: (date: DateSelection) => void;
+  onSelectDate: (date: DateSelection, preferredMealCode?: string) => void;
 }
 
 type MealFilterType = '2' | '3' | '1' | 'ALL'; // 2: 중식, 3: 석식, 1: 조식, ALL: 전체
@@ -25,6 +25,7 @@ export const WeeklyMealModal: React.FC<WeeklyMealModalProps> = ({
   const [mealFilter, setMealFilter] = useState<MealFilterType>('2'); // default to 중식
   // Per-day selected meal override (for days with multiple meals)
   const [dayMealOverrides, setDayMealOverrides] = useState<Record<string, string>>({});
+  const [copiedWeekly, setCopiedWeekly] = useState(false);
 
   // Calculate Monday to Friday of the week
   const getWeekDates = (offset: number) => {
@@ -77,6 +78,45 @@ export const WeeklyMealModal: React.FC<WeeklyMealModalProps> = ({
     fetchWeek();
   }, [isOpen, weekOffset, baseDate.year, baseDate.month, baseDate.day]);
 
+  // Copy entire week meal to clipboard with clean newlines
+  const handleCopyWeeklyMenu = async () => {
+    const filterName = mealFilter === '2' ? '중식' : mealFilter === '3' ? '석식' : '식단';
+    const lines: string[] = [
+      `📅 [부산 양정고등학교 ${currentWeekDates[0].displayDate} ~ ${currentWeekDates[4].displayDate} 주간 ${filterName}표]`,
+      '----------------------------------------',
+    ];
+
+    currentWeekDates.forEach((day) => {
+      const dayMeals = weekMeals.get(day.ymd) || [];
+      const override = dayMealOverrides[day.ymd];
+      let meal = override
+        ? dayMeals.find((m) => m.mealCode === override)
+        : mealFilter !== 'ALL'
+        ? dayMeals.find((m) => m.mealCode === mealFilter) || dayMeals[0]
+        : dayMeals[0];
+
+      lines.push(`\n📌 ${day.dayName} (${day.displayDate}) - ${meal?.mealName || filterName}`);
+      if (meal && meal.dishes.length > 0) {
+        meal.dishes.forEach((d) => {
+          lines.push(` • ${d.cleanName}`);
+        });
+        if (meal.calories) lines.push(` ⚡ 열량: ${meal.calories}`);
+      } else {
+        lines.push(' • 등록된 급식 정보가 없습니다.');
+      }
+    });
+
+    lines.push('\n출처: 교육부 나이스(NEIS) 학생 급식 개방포털');
+
+    try {
+      await navigator.clipboard.writeText(lines.join('\n'));
+      setCopiedWeekly(true);
+      setTimeout(() => setCopiedWeekly(false), 2000);
+    } catch {
+      // ignore
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -104,31 +144,52 @@ export const WeeklyMealModal: React.FC<WeeklyMealModalProps> = ({
               </div>
             </div>
 
-            {/* Week Stepper & Close */}
-            <div className="flex items-center gap-1.5 self-end sm:self-center">
+            {/* Actions: Copy & Week Stepper & Close */}
+            <div className="flex items-center flex-wrap gap-1.5 self-end sm:self-center">
               <button
                 type="button"
-                onClick={() => setWeekOffset((prev) => prev - 1)}
-                className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors"
-                title="이전 주"
+                onClick={handleCopyWeeklyMenu}
+                className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 transition-colors flex items-center gap-1.5"
+                title="주간 식단 전체 텍스트 복사"
               >
-                <ChevronLeft className="w-4 h-4" />
+                {copiedWeekly ? (
+                  <>
+                    <span className="text-emerald-600 dark:text-emerald-400 font-extrabold">✓</span>
+                    <span className="text-emerald-600 dark:text-emerald-400">복사완료!</span>
+                  </>
+                ) : (
+                  <>
+                    <span>주간 식단 복사</span>
+                  </>
+                )}
               </button>
-              <button
-                type="button"
-                onClick={() => setWeekOffset(0)}
-                className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 transition-colors"
-              >
-                이번 주
-              </button>
-              <button
-                type="button"
-                onClick={() => setWeekOffset((prev) => prev + 1)}
-                className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors"
-                title="다음 주"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
+
+              <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-0.5 rounded-xl">
+                <button
+                  type="button"
+                  onClick={() => setWeekOffset((prev) => prev - 1)}
+                  className="p-1.5 rounded-lg hover:bg-white dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors"
+                  title="이전 주"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setWeekOffset(0)}
+                  className="px-2.5 py-1 rounded-lg text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 transition-colors"
+                >
+                  이번 주
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setWeekOffset((prev) => prev + 1)}
+                  className="p-1.5 rounded-lg hover:bg-white dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors"
+                  title="다음 주"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+
               <button
                 type="button"
                 onClick={onClose}
@@ -211,7 +272,7 @@ export const WeeklyMealModal: React.FC<WeeklyMealModalProps> = ({
             </div>
 
             <div className="text-[11px] text-slate-500 dark:text-slate-400 px-2 font-medium">
-              💡 중식 / 석식 탭을 클릭하여 주간 식단을 비교할 수 있습니다.
+              💡 석식 버튼을 누르면 나이스(NEIS)에서 불러온 저녁 급식이 자동 반영됩니다.
             </div>
           </div>
 
@@ -220,7 +281,7 @@ export const WeeklyMealModal: React.FC<WeeklyMealModalProps> = ({
             {loading ? (
               <div className="h-72 flex flex-col items-center justify-center gap-3 text-slate-400">
                 <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-                <span className="text-xs font-bold">주간 식단표 불러오는 중...</span>
+                <span className="text-xs font-bold">나이스(NEIS) 주간 급식표 불러오는 중...</span>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
@@ -299,7 +360,7 @@ export const WeeklyMealModal: React.FC<WeeklyMealModalProps> = ({
                             {dayMeals.map((m) => (
                               <div
                                 key={m.mealCode}
-                                className="p-2.5 rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 space-y-1"
+                                className="p-2.5 rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 space-y-1.5"
                               >
                                 <div className="flex items-center justify-between text-[11px]">
                                   <span
@@ -317,8 +378,13 @@ export const WeeklyMealModal: React.FC<WeeklyMealModalProps> = ({
                                 </div>
                                 <ul className="space-y-1 text-xs text-slate-800 dark:text-slate-200 pt-1">
                                   {m.dishes.map((d, i) => (
-                                    <li key={i} className="line-clamp-1 leading-snug">
-                                      • {d.cleanName}
+                                    <li key={i} className="flex items-start gap-1.5 leading-snug py-0.5">
+                                      <span
+                                        className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${
+                                          m.mealCode === '2' ? 'bg-blue-500' : 'bg-indigo-500'
+                                        }`}
+                                      />
+                                      <span className="break-keep font-medium">{d.cleanName}</span>
                                     </li>
                                   ))}
                                 </ul>
@@ -326,8 +392,8 @@ export const WeeklyMealModal: React.FC<WeeklyMealModalProps> = ({
                             ))}
                           </div>
                         ) : targetMeal ? (
-                          <div className="space-y-1.5">
-                            <div className="flex items-center justify-between text-[11px]">
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between text-[11px] pb-1 border-b border-slate-200/50 dark:border-slate-700/50">
                               <span
                                 className={`px-2 py-0.5 rounded-md font-extrabold text-[10px] ${
                                   targetMeal.mealCode === '2'
@@ -343,10 +409,18 @@ export const WeeklyMealModal: React.FC<WeeklyMealModalProps> = ({
                                 ⚡ {targetMeal.calories}
                               </span>
                             </div>
-                            <ul className="space-y-1.5 text-xs text-slate-800 dark:text-slate-200 pt-1">
+                            {/* Every dish cleanly placed on its own line with bullet */}
+                            <ul className="space-y-1 text-xs text-slate-800 dark:text-slate-200">
                               {targetMeal.dishes.map((d, i) => (
-                                <li key={i} className="line-clamp-1 leading-snug font-medium">
-                                  • {d.cleanName}
+                                <li key={i} className="flex items-start gap-1.5 leading-relaxed py-0.5">
+                                  <span
+                                    className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${
+                                      targetMeal.mealCode === '2' ? 'bg-blue-500' : 'bg-indigo-500'
+                                    }`}
+                                  />
+                                  <span className="break-keep font-medium text-slate-800 dark:text-slate-200">
+                                    {d.cleanName}
+                                  </span>
                                 </li>
                               ))}
                             </ul>
@@ -357,7 +431,7 @@ export const WeeklyMealModal: React.FC<WeeklyMealModalProps> = ({
                               {mealFilter === '2'
                                 ? '중식 미운영'
                                 : mealFilter === '3'
-                                ? '석식 미운영'
+                                ? '해당 일자 석식 없음'
                                 : '해당 식단 없음'}
                             </div>
                             <button
@@ -384,11 +458,14 @@ export const WeeklyMealModal: React.FC<WeeklyMealModalProps> = ({
                       <button
                         type="button"
                         onClick={() => {
-                          onSelectDate({
-                            year: day.dateObj.getFullYear(),
-                            month: day.dateObj.getMonth() + 1,
-                            day: day.dateObj.getDate(),
-                          });
+                          onSelectDate(
+                            {
+                              year: day.dateObj.getFullYear(),
+                              month: day.dateObj.getMonth() + 1,
+                              day: day.dateObj.getDate(),
+                            },
+                            targetMeal?.mealCode || (mealFilter !== 'ALL' ? mealFilter : undefined)
+                          );
                           onClose();
                         }}
                         className="w-full py-2 rounded-xl bg-white dark:bg-slate-700 hover:bg-blue-50 dark:hover:bg-blue-950 text-blue-700 dark:text-blue-300 text-xs font-bold border border-slate-200 dark:border-slate-600 transition-colors shadow-2xs"

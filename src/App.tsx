@@ -22,6 +22,7 @@ export default function App() {
 
   const [meals, setMeals] = useState<ParsedMeal[]>([]);
   const [activeMealIndex, setActiveMealIndex] = useState(0);
+  const [preferredMealCode, setPreferredMealCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchingNextMeal, setSearchingNextMeal] = useState(false);
@@ -111,14 +112,19 @@ export default function App() {
   ).padStart(2, '0')}`;
 
   // Fetch meals on date change
-  const loadMealForDate = useCallback(async (ymd: string) => {
+  const loadMealForDate = useCallback(async (ymd: string, preferredMeal?: string | null) => {
     setLoading(true);
     setError(null);
 
     try {
       const result = await fetchMealsByDate(ymd);
       setMeals(result);
-      setActiveMealIndex(0);
+      if (preferredMeal) {
+        const foundIdx = result.findIndex((m) => m.mealCode === preferredMeal);
+        setActiveMealIndex(foundIdx >= 0 ? foundIdx : 0);
+      } else {
+        setActiveMealIndex(0);
+      }
     } catch (err: unknown) {
       console.error('Fetch meal error:', err);
       setError('급식 정보를 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
@@ -129,8 +135,8 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    loadMealForDate(currentYmd);
-  }, [currentYmd, loadMealForDate]);
+    loadMealForDate(currentYmd, preferredMealCode);
+  }, [currentYmd, preferredMealCode, loadMealForDate]);
 
   // Quick Jump Presets
   const jumpToToday = () => {
@@ -283,7 +289,12 @@ export default function App() {
         isOpen={isWeeklyModalOpen}
         onClose={() => setIsWeeklyModalOpen(false)}
         baseDate={selectedDate}
-        onSelectDate={setSelectedDate}
+        onSelectDate={(newDate, preferredCode) => {
+          setSelectedDate(newDate);
+          if (preferredCode) {
+            setPreferredMealCode(preferredCode);
+          }
+        }}
       />
     </div>
   );
