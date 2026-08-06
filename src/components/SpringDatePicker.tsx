@@ -145,22 +145,22 @@ export const SpringDatePicker: React.FC<SpringDatePickerProps> = ({
             <Calendar className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-xs font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-              <span>조회 일자</span>
+            <div className="text-xs font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mb-0.5">
+              <span>선택된 급식 일자</span>
               {isSelectedToday && (
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-600 text-white font-bold">
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-600 text-white font-black shadow-xs">
                   오늘
                 </span>
               )}
               {isWeekend && (
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 font-bold">
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 font-extrabold">
                   주말
                 </span>
               )}
             </div>
-            <div className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white">
-              {date.year}년 {date.month}월 {date.day}일{' '}
-              <span className={isWeekend ? 'text-amber-600 dark:text-amber-400' : 'text-blue-600 dark:text-blue-400'}>
+            <div className="text-lg sm:text-2xl font-black text-blue-600 dark:text-blue-400 tracking-tight flex items-baseline gap-1.5">
+              <span>{date.year}년 {date.month}월 {date.day}일</span>
+              <span className={`text-sm sm:text-base font-bold ${isWeekend ? 'text-amber-600 dark:text-amber-400' : 'text-blue-500/80 dark:text-blue-400/80'}`}>
                 ({dayName})
               </span>
             </div>

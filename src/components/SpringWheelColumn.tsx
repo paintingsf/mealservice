@@ -197,26 +197,26 @@ export const SpringWheelColumn: React.FC<SpringWheelColumnProps> = ({
           perspective: '1000px',
         }}
       >
-        {/* Center Active Focus Highlight Band */}
+        {/* Center Active Focus Highlight Band (Layered behind items with z-0) */}
         <div
-          className="absolute left-1.5 right-1.5 pointer-events-none rounded-xl bg-white dark:bg-slate-800 shadow-sm border-2 border-blue-500/40 dark:border-blue-400/50 z-10"
+          className="absolute left-1.5 right-1.5 pointer-events-none rounded-xl bg-blue-50/80 dark:bg-blue-950/50 border-2 border-blue-500/70 dark:border-blue-400/70 shadow-xs z-0"
           style={{
             top: `${HALF_HEIGHT - ITEM_HEIGHT / 2}px`,
             height: `${ITEM_HEIGHT}px`,
           }}
         >
-          <div className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-extrabold text-blue-600 dark:text-blue-400">
+          <div className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-black text-blue-600 dark:text-blue-400 select-none">
             {unit}
           </div>
         </div>
 
         {/* Top/Bottom Gradient Shadows for 3D depth */}
-        <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-slate-100/90 via-slate-100/40 to-transparent dark:from-slate-950/90 dark:via-slate-950/40 dark:to-transparent pointer-events-none z-20" />
-        <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-slate-100/90 via-slate-100/40 to-transparent dark:from-slate-950/90 dark:via-slate-950/40 dark:to-transparent pointer-events-none z-20" />
+        <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-slate-50 via-slate-50/60 to-transparent dark:from-slate-900 dark:via-slate-900/60 dark:to-transparent pointer-events-none z-20" />
+        <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-slate-50 via-slate-50/60 to-transparent dark:from-slate-900 dark:via-slate-900/60 dark:to-transparent pointer-events-none z-20" />
 
-        {/* Roller Items Container */}
+        {/* Roller Items Container (Layered above highlight band with z-10) */}
         <motion.div
-          className="absolute inset-x-0 will-change-transform"
+          className="absolute inset-x-0 will-change-transform z-10"
           style={{
             top: `${HALF_HEIGHT - ITEM_HEIGHT / 2}px`,
             y: springOffset,
@@ -228,8 +228,8 @@ export const SpringWheelColumn: React.FC<SpringWheelColumnProps> = ({
             const absDistance = Math.abs(distance);
 
             const rotateX = Math.max(-65, Math.min(65, distance * 25));
-            const opacity = Math.max(0.18, 1 - absDistance * 0.28);
-            const scale = Math.max(0.78, 1 - absDistance * 0.08);
+            const opacity = Math.max(0.2, 1 - absDistance * 0.3);
+            const scale = Math.max(0.8, 1 - absDistance * 0.08);
             const isSelected = index === selectedIndex;
 
             return (
@@ -247,24 +247,24 @@ export const SpringWheelColumn: React.FC<SpringWheelColumnProps> = ({
                 }}
               >
                 <span
-                  className={`text-lg transition-all tracking-tight ${
+                  className={`transition-all tracking-tight ${
                     isSelected
-                      ? 'font-extrabold text-slate-950 dark:text-white scale-105'
+                      ? 'text-xl sm:text-2xl font-black text-blue-600 dark:text-blue-400 scale-110 drop-shadow-xs'
                       : item.isWeekend
-                      ? 'font-medium text-amber-600 dark:text-amber-400'
-                      : 'font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                      ? 'text-base font-medium text-amber-600 dark:text-amber-400'
+                      : 'text-base font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                   }`}
                 >
                   {item.label}
                 </span>
                 {item.subLabel && (
                   <span
-                    className={`ml-1 text-xs font-semibold ${
+                    className={`ml-1 transition-all ${
                       isSelected
-                        ? 'text-blue-600 dark:text-blue-400'
+                        ? 'text-xs font-black text-blue-600 dark:text-blue-400'
                         : item.isWeekend
-                        ? 'text-amber-600 dark:text-amber-400'
-                        : 'text-slate-400 dark:text-slate-500'
+                        ? 'text-xs font-semibold text-amber-600 dark:text-amber-400'
+                        : 'text-xs font-medium text-slate-400 dark:text-slate-500'
                     }`}
                   >
                     {item.subLabel}
